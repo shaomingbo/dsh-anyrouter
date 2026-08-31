@@ -1,0 +1,4 @@
+# AnyRouter provider bundle for DeepSeek Harness.
+- insert:
+    - id: dsh-anyrouter
+      name: dsh-anyrouter
