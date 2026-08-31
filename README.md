@@ -5,7 +5,7 @@ A dedicated [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 
 ## Install (fixed release tag, no arguments)
 
 ```bash
-npx --yes github:shaomingbo/dsh-anyrouter#v0.2.0
+npx --yes github:shaomingbo/dsh-anyrouter#v0.2.1
 ```
 
 The installer defaults to the `web` profile, pins the exact release tag, edits only `dependencies.dsh-anyrouter` and `dsh.profile.bundles` in the profile `package.json`, runs `pnpm install --ignore-scripts` there, and never stops or restarts DSH. Restart DSH manually afterwards and hard-refresh the Web page.
@@ -13,10 +13,10 @@ The installer defaults to the `web` profile, pins the exact release tag, edits o
 Other commands:
 
 ```bash
-npx --yes github:shaomingbo/dsh-anyrouter#v0.2.0 status                    # is it installed?
-npx --yes github:shaomingbo/dsh-anyrouter#v0.2.0 uninstall                 # idempotent removal
-npx --yes github:shaomingbo/dsh-anyrouter#v0.2.0 --profile headless        # another profile
-DSH_ANYROUTER_SOURCE=link:/path/to/checkout npx --yes github:shaomingbo/dsh-anyrouter#v0.2.0   # local source override
+npx --yes github:shaomingbo/dsh-anyrouter#v0.2.1 status                    # is it installed?
+npx --yes github:shaomingbo/dsh-anyrouter#v0.2.1 uninstall                 # idempotent removal
+npx --yes github:shaomingbo/dsh-anyrouter#v0.2.1 --profile headless        # another profile
+DSH_ANYROUTER_SOURCE=link:/path/to/checkout npx --yes github:shaomingbo/dsh-anyrouter#v0.2.1   # local source override
 ```
 
 ## Features
@@ -71,7 +71,7 @@ node scripts/generate-model-profiles.mjs   # regenerate after a pi-ai bump; comm
 Local development against a running profile:
 
 ```bash
-DSH_ANYROUTER_SOURCE=link:/absolute/path/to/checkout npx --yes github:shaomingbo/dsh-anyrouter#v0.2.0
+DSH_ANYROUTER_SOURCE=link:/absolute/path/to/checkout npx --yes github:shaomingbo/dsh-anyrouter#v0.2.1
 ```
 
 Live endpoint verification is environment-gated and makes real requests only when `ANYROUTER_LIVE_KEY` is exported:

@@ -5,7 +5,7 @@
 ## 安装（固定 release tag，免参数）
 
 ```bash
-npx --yes github:shaomingbo/dsh-anyrouter#v0.2.0
+npx --yes github:shaomingbo/dsh-anyrouter#v0.2.1
 ```
 
 安装器默认目标为 `web` profile，固定到精确 release tag，只修改 profile `package.json` 中的 `dependencies.dsh-anyrouter` 与 `dsh.profile.bundles`，随后在该目录执行 `pnpm install --ignore-scripts`，全程不停、不重启 DSH。结束后请手动重启 DSH 并强刷 Web 页面。
@@ -13,10 +13,10 @@ npx --yes github:shaomingbo/dsh-anyrouter#v0.2.0
 其他命令：
 
 ```bash
-npx --yes github:shaomingbo/dsh-anyrouter#v0.2.0 status                    # 是否已安装
-npx --yes github:shaomingbo/dsh-anyrouter#v0.2.0 uninstall                 # 幂等卸载
-npx --yes github:shaomingbo/dsh-anyrouter#v0.2.0 --profile headless        # 指定其他 profile
-DSH_ANYROUTER_SOURCE=link:/path/to/checkout npx --yes github:shaomingbo/dsh-anyrouter#v0.2.0   # 本地源码覆盖
+npx --yes github:shaomingbo/dsh-anyrouter#v0.2.1 status                    # 是否已安装
+npx --yes github:shaomingbo/dsh-anyrouter#v0.2.1 uninstall                 # 幂等卸载
+npx --yes github:shaomingbo/dsh-anyrouter#v0.2.1 --profile headless        # 指定其他 profile
+DSH_ANYROUTER_SOURCE=link:/path/to/checkout npx --yes github:shaomingbo/dsh-anyrouter#v0.2.1   # 本地源码覆盖
 ```
 
 ## 功能
@@ -71,7 +71,7 @@ node scripts/generate-model-profiles.mjs   # pi-ai 升级后重新生成并提�
 本地开发接入运行中的 profile：
 
 ```bash
-DSH_ANYROUTER_SOURCE=link:/absolute/path/to/checkout npx --yes github:shaomingbo/dsh-anyrouter#v0.2.0
+DSH_ANYROUTER_SOURCE=link:/absolute/path/to/checkout npx --yes github:shaomingbo/dsh-anyrouter#v0.2.1
 ```
 
 真实端点验证按环境变量门控，仅当导出 `ANYROUTER_LIVE_KEY` 时发起真实请求：

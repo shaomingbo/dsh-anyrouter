@@ -23,13 +23,16 @@ function readProfile(profileDir) {
 
 const failingInstall = async () => { throw new Error('pnpm exploded') }
 const okInstall = async () => {}
+const packageVersion = JSON.parse(
+  readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+).version
 
 test('parseArgs defaults to install on the web profile with the pinned source', () => {
   const options = parseArgs([])
   assert.equal(options.command, 'install')
   assert.equal(options.profile, 'web')
   assert.equal(options.source, DEFAULT_SOURCE)
-  assert.match(DEFAULT_SOURCE, /^github:shaomingbo\/dsh-[a-z-]+#v0\.2\.0$/)
+  assert.equal(DEFAULT_SOURCE, `github:shaomingbo/${PACKAGE_NAME}#v${packageVersion}`)
   assert.throws(() => parseArgs(['--profile']), /require values/)
   assert.throws(() => parseArgs(['--source']), /require values/)
   assert.throws(() => parseArgs(['bogus']), /unknown argument/)

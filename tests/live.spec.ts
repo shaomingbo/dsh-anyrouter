@@ -1,11 +1,11 @@
 // Live endpoint verification against the real AnyRouter relay.
 //
 // Gated on the environment: these tests make real, billable requests and only
-// run when ANYEROUTER_LIVE_KEY is exported. The key is never logged, never
+// run when ANYROUTER_LIVE_KEY is exported. The key is never logged, never
 // written to disk, and never appears in a snapshot — assertions only inspect
 // event shapes and assistant text.
 //
-//   ANYEROUTER_LIVE_KEY=sk-… pnpm vitest run tests/live.spec.ts
+//   ANYROUTER_LIVE_KEY=sk-… pnpm vitest run tests/live.spec.ts
 //
 // The relay is capacity-flaky by design (README: the model list is advisory —
 // a model can answer 429/500 while its upstream channel is busy). A capacity
@@ -20,7 +20,7 @@ import { discoverAnyRouterModels } from '../src/discovery.ts'
 import { claudeCodeStreams } from '../src/transports/claude.ts'
 import { codexResponsesStreams } from '../src/transports/codex.ts'
 
-const LIVE_KEY = process.env.ANYEROUTER_LIVE_KEY
+const LIVE_KEY = process.env.ANYROUTER_LIVE_KEY
 const live = LIVE_KEY === undefined || LIVE_KEY.length === 0 ? describe.skip : describe
 const REQUEST_TIMEOUT_MS = 180_000
 
