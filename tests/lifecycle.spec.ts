@@ -142,6 +142,31 @@ describe('Cordis plugin lifecycle', () => {
     }
   })
 
+  it('tracks a preconfigured credentials service mounted after the provider plugin', async () => {
+    await withoutAmbientKey(async () => {
+      class PreconfiguredCredentials extends MemoryCredentials {
+        override present = true
+      }
+
+      const ctx = new Context()
+      await ctx.plugin(LlmRuntime)
+      await ctx.plugin(anyrouter, {
+        models: [{ id: 'claude-opus-5', protocol: 'claude-code' }],
+      })
+      await settled()
+      expect(ctx.llm.listProviders()).toEqual([])
+
+      const credentialsFiber = await ctx.plugin(PreconfiguredCredentials)
+      await settled()
+      await expect(ctx.llm.listModels('anyrouter')).resolves.toHaveLength(1)
+
+      await credentialsFiber.dispose()
+      await settled()
+      expect(ctx.llm.listProviders()).toEqual([])
+      await expect(ctx.llm.listModels('anyrouter')).rejects.toThrow(/not registered|no adapter/i)
+    })
+  })
+
   it('credential updates swap the route live', async () => {
     await withoutAmbientKey(async () => {
       const ctx = new Context()

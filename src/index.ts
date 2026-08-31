@@ -136,8 +136,15 @@ export function apply(ctx: Context, config: AnyRouterConfig): void {
     }
   }
   ctx.effect(() => () => { disposed = true }, 'dsh-anyrouter: route activation lifecycle')
-  void ensureRoute()
   const scheduleRouteCheck = (): void => { void ensureRoute() }
+  void ensureRoute()
+  // The bundle can start before the credentials provider. Re-evaluate when that
+  // service becomes active (or disappears), otherwise a persisted key loaded
+  // later leaves the provider directory visible but the selector route dormant.
+  ctx.inject(['credentials'], () => {
+    scheduleRouteCheck()
+    return () => scheduleRouteCheck()
+  })
   ctx.on('credentials/reference-updated', ref => {
     if ((ref as string) === (options().apiKeyEnv as string)) scheduleRouteCheck()
   })
