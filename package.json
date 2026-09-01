@@ -1,6 +1,6 @@
 {
   "name": "dsh-anyrouter",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Dedicated AnyRouter Claude Code and Codex Responses adapter for DeepSeek Harness",
   "type": "module",
   "main": "lib/index.js",
