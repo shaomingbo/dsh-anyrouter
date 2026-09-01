@@ -8,7 +8,7 @@ import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 export const PACKAGE_NAME = 'dsh-anyrouter'
-export const DEFAULT_SOURCE = 'github:shaomingbo/dsh-anyrouter#v0.2.2'
+export const DEFAULT_SOURCE = 'github:shaomingbo/dsh-anyrouter#v0.2.3'
 const COMMANDS = ['install', 'status', 'uninstall']
 
 export function parseArgs(argv) {
