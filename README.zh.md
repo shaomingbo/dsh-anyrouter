@@ -5,7 +5,7 @@
 ## 安装（固定 release tag，免参数）
 
 ```bash
-npx --yes github:shaomingbo/dsh-anyrouter#v0.2.3
+npx --yes github:shaomingbo/dsh-anyrouter#v0.3.0
 ```
 
 安装器默认目标为 `web` profile，固定到精确 release tag，只修改 profile `package.json` 中的 `dependencies.dsh-anyrouter` 与 `dsh.profile.bundles`，随后在该目录执行 `pnpm install --ignore-scripts`，全程不停、不重启 DSH。结束后请手动重启 DSH 并强刷 Web 页面。
@@ -13,11 +13,21 @@ npx --yes github:shaomingbo/dsh-anyrouter#v0.2.3
 其他命令：
 
 ```bash
-npx --yes github:shaomingbo/dsh-anyrouter#v0.2.3 status                    # 是否已安装
-npx --yes github:shaomingbo/dsh-anyrouter#v0.2.3 uninstall                 # 幂等卸载
-npx --yes github:shaomingbo/dsh-anyrouter#v0.2.3 --profile headless        # 指定其他 profile
-DSH_ANYROUTER_SOURCE=link:/path/to/checkout npx --yes github:shaomingbo/dsh-anyrouter#v0.2.3   # 本地源码覆盖
+npx --yes github:shaomingbo/dsh-anyrouter#v0.3.0 status                    # 是否已安装
+npx --yes github:shaomingbo/dsh-anyrouter#v0.3.0 uninstall                 # 幂等卸载
+npx --yes github:shaomingbo/dsh-anyrouter#v0.3.0 --profile headless        # 指定其他 profile
+DSH_ANYROUTER_SOURCE=link:/path/to/checkout npx --yes github:shaomingbo/dsh-anyrouter#v0.3.0   # 本地源码覆盖
 ```
+
+## 兼容性
+
+| DSH 版本 | 状态 |
+|---|---|
+| `0.1.2-alpha.3` | **已验证**（构建 + 启动 + 设置面板实测） |
+| `0.1.1-rc.2` 及更早 | **不支持**：这些版本的 Client 通过 `connection.api` 暴露凭证与模型发现，`0.1.2-alpha.3` 已移除该入口并改用 `ctx.remote.credentials` / `ctx.remote.llm`。请改用 `v0.2.3` |
+| 其他版本 | 未知，未经验证 |
+
+Client 插件在启动时探测 `remote.credentials` / `remote.llm`；缺失时立即报错退出（面板不会静默空白），错误信息会写明支持范围。
 
 ## 功能
 
@@ -71,7 +81,7 @@ node scripts/generate-model-profiles.mjs   # pi-ai 升级后重新生成并提�
 本地开发接入运行中的 profile：
 
 ```bash
-DSH_ANYROUTER_SOURCE=link:/absolute/path/to/checkout npx --yes github:shaomingbo/dsh-anyrouter#v0.2.3
+DSH_ANYROUTER_SOURCE=link:/absolute/path/to/checkout npx --yes github:shaomingbo/dsh-anyrouter#v0.3.0
 ```
 
 真实端点验证按环境变量门控，仅当导出 `ANYROUTER_LIVE_KEY` 时发起真实请求：

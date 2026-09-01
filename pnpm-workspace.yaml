@@ -2,3 +2,8 @@ allowBuilds:
   '@google/genai': false
   esbuild: true
   protobufjs: false
+minimumReleaseAgeExclude:
+  - '@deepseek-ai/dsh-api-remotes@0.1.2-alpha.3'
+  - '@deepseek-ai/dsh-client-connection@0.1.2-alpha.3'
+  - '@deepseek-ai/dsh-client-ui-settings@0.1.2-alpha.3'
+  - '@deepseek-ai/dsh-client-ui-slots@0.1.2-alpha.3'

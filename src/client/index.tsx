@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { ReactElement } from 'react'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
-import type { IApiClient } from '@deepseek-ai/dsh-api-remotes/client'
+import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import { MODEL_PROFILES_BY_ID } from '../model-profiles.generated.ts'
 
 const SETTINGS_NS = 'llm-anyrouter'
@@ -59,8 +59,26 @@ interface SettingsScope {
   set(field: string, value: unknown): Promise<void>
 }
 
-interface ApiEnvelope<T> {
-  result: { ok: true; value: T } | { ok: false; error: unknown }
+/** One model an endpoint reports about itself during discovery. */
+interface DiscoveredModel {
+  id: string
+  name?: string
+  contextWindow?: number
+  maxTokens?: number
+}
+
+/**
+ * The Host operations this section needs, bound once in `apply`. The component
+ * never holds a Cordis service and never sees a Remote envelope: every call
+ * either resolves to a plain value or throws a human-readable Error.
+ */
+interface AnyRouterOperations {
+  /** Whether the AnyRouter API key reference currently resolves on the Host. */
+  credentialConfigured(): Promise<boolean>
+  /** Store the API key under the AnyRouter reference. */
+  storeCredential(value: string): Promise<void>
+  /** Interrogate an AnyRouter endpoint for the models it serves. */
+  discoverModels(baseURL: string): Promise<DiscoveredModel[]>
 }
 
 function errorMessage(error: unknown): string {
@@ -73,10 +91,16 @@ function errorMessage(error: unknown): string {
   return String(error)
 }
 
-async function unwrap<T>(call: Promise<ApiEnvelope<T>>): Promise<T> {
-  const envelope = await call
-  if (envelope.result.ok) return envelope.result.value
-  throw new Error(errorMessage(envelope.result.error))
+/**
+ * Collapse a Remote result (`{ ok: true, value } | { ok: false, error }`) to
+ * its value, turning a refusal into a thrown Error the section can render.
+ * @param response - the awaited Remote namespace response.
+ * @returns the carried value.
+ */
+function unwrapRemote<T>(response: unknown): T {
+  const envelope = response as { ok?: unknown; value?: T; error?: unknown } | null | undefined
+  if (envelope !== null && envelope !== undefined && envelope.ok === true) return envelope.value as T
+  throw new Error(errorMessage(envelope?.error))
 }
 
 function protocolFor(id: string): Protocol | undefined {
@@ -154,21 +178,6 @@ function rowToSaved(row: PickerRow): SyncedModel {
   }
 }
 
-function credentialConfigured(value: unknown): boolean {
-  if (typeof value !== 'object' || value === null) return false
-  const credentials = (value as { credentials?: unknown }).credentials
-  if (Array.isArray(credentials)) {
-    return credentials.some(row => typeof row === 'object'
-      && row !== null
-      && (row as { ref?: unknown }).ref === API_KEY_REF
-      && (row as { configured?: unknown }).configured === true)
-  }
-  if (typeof credentials === 'object' && credentials !== null) {
-    return (credentials as Record<string, { configured?: unknown }>)[API_KEY_REF]?.configured === true
-  }
-  return false
-}
-
 // Tokens come from @deepseek-ai/dsh-client-ui-theme: aliases are defined on
 // body for the light theme and overridden by body[data-ds-dark-theme], so the
 // section follows the host day/night theme automatically. Fallbacks mirror the
@@ -214,7 +223,7 @@ const styles = `
 `
 
 interface SectionProps {
-  api: IApiClient
+  ops: AnyRouterOperations
   scope: SettingsScope
   subscribeCredentials: (refresh: () => void) => () => void
 }
@@ -329,7 +338,7 @@ function ReasoningSummary({ model }: { model: SyncedModel }): ReactElement {
   return <span className="dsh-any-badge">{`推理 ${efforts}${suffix}`}</span>
 }
 
-function Section({ api, scope, subscribeCredentials }: SectionProps): ReactElement {
+function Section({ ops, scope, subscribeCredentials }: SectionProps): ReactElement {
   const snapshot = useSyncExternalStore(
     listener => scope.subscribe(listener),
     () => scope.getSnapshot(),
@@ -367,16 +376,12 @@ function Section({ api, scope, subscribeCredentials }: SectionProps): ReactEleme
   const refreshCredential = useCallback(() => setCredentialRevision(value => value + 1), [])
   useEffect(() => subscribeCredentials(refreshCredential), [refreshCredential, subscribeCredentials])
   useEffect(() => {
-    const controller = new AbortController()
     let live = true
-    void unwrap<any>((api.credentials.describe as any)({ refs: [API_KEY_REF] }, controller.signal))
-      .then(credentials => {
-        if (!live) return
-        setConfigured(credentialConfigured(credentials))
-      })
+    void ops.credentialConfigured()
+      .then(present => { if (live) setConfigured(present) })
       .catch(reason => { if (live) setError(errorMessage(reason)) })
-    return () => { live = false; controller.abort() }
-  }, [api, credentialRevision])
+    return () => { live = false }
+  }, [ops, credentialRevision])
 
   const beginOperation = useCallback(() => {
     activeController.current?.abort()
@@ -403,9 +408,7 @@ function Section({ api, scope, subscribeCredentials }: SectionProps): ReactEleme
     setSuccess(null)
     try {
       if (apiKey.trim().length > 0) {
-        await unwrap<any>((api.credentials.set as any)(
-          { ref: API_KEY_REF, value: apiKey.trim() }, operation.controller.signal,
-        ))
+        await ops.storeCredential(apiKey.trim())
       }
       if (!operation.active()) return
       await persistBaseURL(operation)
@@ -418,7 +421,7 @@ function Section({ api, scope, subscribeCredentials }: SectionProps): ReactEleme
     } finally {
       if (operation.active()) setBusy(false)
     }
-  }, [api, apiKey, baseURL, beginOperation, refreshCredential, scope])
+  }, [apiKey, baseURL, beginOperation, ops, refreshCredential, scope])
 
   const discover = useCallback(async () => {
     const operation = beginOperation()
@@ -427,19 +430,11 @@ function Section({ api, scope, subscribeCredentials }: SectionProps): ReactEleme
     setSuccess(null)
     try {
       if (apiKey.trim().length > 0) {
-        await unwrap<any>((api.credentials.set as any)(
-          { ref: API_KEY_REF, value: apiKey.trim() }, operation.controller.signal,
-        ))
+        await ops.storeCredential(apiKey.trim())
         if (!operation.active()) return
       }
-      const result = await unwrap<any>((api.llm.discoverModels as any)({
-        settingsNs: SETTINGS_NS,
-        provider: PROVIDER,
-        baseURL: baseURL.trim() || DEFAULT_BASE_URL,
-      }, operation.controller.signal))
+      const discovered = await ops.discoverModels(baseURL.trim() || DEFAULT_BASE_URL)
       if (!operation.active()) return
-      const discovered: { id: string; name?: string; contextWindow?: number; maxTokens?: number }[] =
-        result.models ?? []
       const saved = new Map(models.map(model => [model.id, model]))
       const rows: PickerRow[] = []
       for (const row of discovered) {
@@ -473,7 +468,7 @@ function Section({ api, scope, subscribeCredentials }: SectionProps): ReactEleme
     } finally {
       if (operation.active()) setBusy(false)
     }
-  }, [api, apiKey, baseURL, beginOperation, models, refreshCredential])
+  }, [apiKey, baseURL, beginOperation, models, ops, refreshCredential])
 
   const saveSelection = useCallback(async () => {
     if (picker === null) return
@@ -597,11 +592,62 @@ function Section({ api, scope, subscribeCredentials }: SectionProps): ReactEleme
   )
 }
 
-export const inject = ['slots', 'connection', 'remote', 'settingsScope']
+/**
+ * Required services. `remote.credentials` and `remote.llm` are the Host
+ * capabilities this section is built on; declaring them keeps activation
+ * waiting until both namespaces are mounted rather than crashing the slot.
+ */
+export const inject = ['slots', 'remote', 'remote.credentials', 'remote.llm', 'settingsScope']
+
+/** DSH versions whose Client contract this plugin was built and verified against. */
+const SUPPORTED_HOST = '@deepseek-ai/dsh-web-app 0.1.2-alpha.3 or later'
+
+/**
+ * The sole seam between this plugin and the DSH Client contract: every Host
+ * call and every version difference lives here, so the section stays free of
+ * service lookups and envelope handling.
+ * @param ctx - client cordis context carrying the typed Remote namespaces.
+ * @returns operations bound to this Host.
+ */
+function createOperations(ctx: any): AnyRouterOperations {
+  const remote = ctx.remote
+  // Capability probe: `connection.api` carried these calls up to 0.1.1-rc.2 and
+  // was removed in 0.1.2-alpha.3, which moved them onto typed Remote
+  // namespaces. Only the Remote shape is verified, so a Host without it fails
+  // loudly instead of degrading onto an unverified path.
+  if (remote?.credentials?.describe === undefined || remote?.llm?.discoverModels === undefined) {
+    throw new Error(
+      `dsh-anyrouter: this DSH build exposes no remote.credentials/remote.llm namespaces. `
+      + `Supported: ${SUPPORTED_HOST}. Upgrade DSH, or install a dsh-anyrouter release matching your Host.`,
+    )
+  }
+  return {
+    credentialConfigured: async () => {
+      const value = unwrapRemote<Record<string, { configured?: unknown }>>(
+        await remote.credentials.describe([API_KEY_REF]),
+      )
+      return value?.[API_KEY_REF]?.configured === true
+    },
+    storeCredential: async value => {
+      unwrapRemote<unknown>(await remote.credentials.set(API_KEY_REF, value))
+    },
+    discoverModels: async baseURL => {
+      const value = unwrapRemote<unknown>(await remote.llm.discoverModels(SETTINGS_NS, {
+        provider: PROVIDER,
+        baseURL,
+      }))
+      // The namespace answers with the model array; tolerate a `{ models }`
+      // wrapper so a Host that re-wraps it does not blank the picker.
+      const models = Array.isArray(value)
+        ? value
+        : (value as { models?: unknown } | null)?.models
+      return Array.isArray(models) ? models as DiscoveredModel[] : []
+    },
+  }
+}
 
 export function apply(ctx: any): void {
-  const connection = ctx.get('connection')
-  const remote = ctx.get('remote')
+  const ops = createOperations(ctx)
   const scope: SettingsScope = ctx.get('settingsScope').bind({
     namespace: SETTINGS_NS,
     decode: (section: unknown): SettingsValue | undefined => typeof section === 'object'
@@ -612,12 +658,12 @@ export function apply(ctx: any): void {
   })
   const subscribeCredentials = (refresh: () => void): (() => void) => {
     const disposers: Array<() => void> = []
-    for (const [event, listener] of [
-      ['credentials/reference-updated', (ref: string) => { if (ref === API_KEY_REF) refresh() }],
-      ['credentials/updated', refresh],
-    ] as const) {
-      try { disposers.push(remote.$on(event, listener)) } catch { /* older/newer event spelling */ }
-    }
+    try {
+      disposers.push(ctx.remote.$on(
+        'credentials/reference-updated',
+        (ref: string) => { if (ref === API_KEY_REF) refresh() },
+      ))
+    } catch { /* the Host may not push credential invalidations */ }
     try { disposers.push(ctx.on('connection/reset', refresh)) } catch { /* optional during tests */ }
     return () => { for (const dispose of disposers) dispose() }
   }
@@ -633,6 +679,6 @@ export function apply(ctx: any): void {
     id: PROVIDER,
     order: 11,
     label: () => 'AnyRouter',
-    inject: () => ({ api: connection.api, scope, subscribeCredentials }),
+    inject: () => ({ ops, scope, subscribeCredentials }),
   }, Section))
 }
