@@ -2,7 +2,8 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { CredentialRef } from '@deepseek-ai/dsh-credentials'
 import { assertUsableApiKey, LlmError } from '@deepseek-ai/dsh-llm'
 import { launchEnvironmentOf } from '@deepseek-ai/dsh-launch-environment'
-import { deepEqualJson, installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-settings'
+import { isDeepStrictEqual } from 'node:util'
+import { installSettingsSection, SETTINGS_NAMESPACE } from './settings-compat.ts'
 import { AnyRouterAdapter } from './adapter.ts'
 import {
   Config,
@@ -123,7 +124,7 @@ export function apply(ctx: Context, config: AnyRouterConfig): void {
         registeredPolicy = policy
         return
       }
-      if (registeredPolicy === undefined || !deepEqualJson(policy, registeredPolicy)) {
+      if (registeredPolicy === undefined || !isDeepStrictEqual(policy, registeredPolicy)) {
         registration.replace([PROVIDER])
         registeredPolicy = policy
       }
@@ -149,7 +150,7 @@ export function apply(ctx: Context, config: AnyRouterConfig): void {
     if ((ref as string) === (options().apiKeyEnv as string)) scheduleRouteCheck()
   })
 
-  ctx.llm.registerModelDiscovery(settingsNamespace(SETTINGS_NS), async request => {
+  ctx.llm.registerModelDiscovery(SETTINGS_NAMESPACE, async request => {
     const resolved = options()
     const apiKey = request.apiKey ?? await resolveApiKey(resolved.apiKeyEnv)
     return discoverAnyRouterModels({
@@ -159,7 +160,7 @@ export function apply(ctx: Context, config: AnyRouterConfig): void {
     })
   })
 
-  installSettingsSection(ctx, settingsNamespace(SETTINGS_NS), Config, config, {
+  installSettingsSection(ctx, SETTINGS_NAMESPACE, Config, config, {
     setSource: source => { current = source },
     onChange: scheduleRouteCheck,
     validate: value => { resolveConfig(value) },
