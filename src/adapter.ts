@@ -34,8 +34,27 @@ function providerOf(config: ResolvedConfig): Provider {
   })
 }
 
-function profileOf(config: ResolvedConfig): ResolvedPiAiProviderProfile {
-  return {
+/**
+ * The resolved profile this route hands the seam. `modelErrors` is
+ * adapter-owned and dereferenced before every request and every model-catalog
+ * projection, but the Host only introduced it in
+ * `@deepseek-ai/dsh-llm-pi-ai@0.1.5-rc.1`; this package's pinned peers predate
+ * that release, so the field is declared here instead of inherited. Older Hosts
+ * ignore the extra key, so one profile shape serves both.
+ */
+export type HostResolvedProfile = ResolvedPiAiProviderProfile & { modelErrors: ReadonlyMap<string, string> }
+
+/**
+ * The single resolved profile this route publishes to the seam. Exported for
+ * the contract tests that pin the adapter-owned fields: the seam dereferences
+ * them before a request, so an absent map fails the whole route — including the
+ * model catalog the selector renders — with "Cannot read properties of
+ * undefined (reading 'get')".
+ * @param config - resolved AnyRouter settings.
+ * @returns the route's profile, ready for `PiAiAdapter`.
+ */
+export function providerProfileOf(config: ResolvedConfig): HostResolvedProfile {
+  const profile: HostResolvedProfile = {
     provider: 'anyrouter',
     displayName: 'AnyRouter',
     apiKeyEnv: config.apiKeyEnv,
@@ -46,9 +65,16 @@ function profileOf(config: ResolvedConfig): ResolvedPiAiProviderProfile {
     requestImageMaxBytes: 32 * 1024 * 1024,
     retryPolicy: config.retryPolicy,
     piProvider: providerOf(config),
+    // Both maps are read unconditionally by the seam: `modelErrors` before every
+    // request and catalog projection, and `configuredMaxTokens` when a request
+    // names no cap of its own. This route builds its models from validated
+    // settings, so it reports no per-model construction failure and configures
+    // no cap here.
+    modelErrors: new Map(),
     configuredMaxTokens: new Map(),
     transport: 'sse',
   }
+  return profile
 }
 
 export class AnyRouterAdapter extends PiAiAdapter {
@@ -63,7 +89,7 @@ export class AnyRouterAdapter extends PiAiAdapter {
       const config = options.config()
       if (config === snapshotConfig && snapshotProfiles !== undefined) return snapshotProfiles
       snapshotConfig = config
-      snapshotProfiles = new Map([['anyrouter', profileOf(config)]])
+      snapshotProfiles = new Map([['anyrouter', providerProfileOf(config)]])
       return snapshotProfiles
     }
     const auth = {

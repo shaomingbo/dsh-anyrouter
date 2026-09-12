@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { AnyRouterAdapter } from '../src/adapter.ts'
+import { AnyRouterAdapter, providerProfileOf } from '../src/adapter.ts'
 import { resolveConfig } from '../src/config.ts'
 
 function adapter() {
@@ -59,5 +59,25 @@ describe('AnyRouterAdapter catalog', () => {
     const subject = adapter()
     expect(subject.providerInfo('anyrouter')).toEqual({ id: 'anyrouter', name: 'AnyRouter' })
     expect(subject.providerRetryPolicy('anyrouter')).toMatchObject({ mode: 'normal', maxRetries: 5 })
+  })
+})
+
+describe('seam profile contract', () => {
+  /**
+   * The seam dereferences these maps before it builds any request or the model
+   * catalog the selector renders; `modelErrors` was added there in
+   * `@deepseek-ai/dsh-llm-pi-ai@0.1.5-rc.1`, and an absent map fails the entire
+   * route with "Cannot read properties of undefined (reading 'get')". This
+   * package's pinned peers predate that release, so nothing else in the build
+   * can observe the field going missing.
+   */
+  it('carries every adapter-owned collection the seam reads unconditionally', () => {
+    const profile = providerProfileOf(resolveConfig({
+      models: [{ id: 'claude-opus-5', protocol: 'claude-code' }],
+    }))
+    expect(profile.modelErrors).toBeInstanceOf(Map)
+    expect(profile.modelErrors.size).toBe(0)
+    expect(profile.configuredMaxTokens).toBeInstanceOf(Map)
+    expect(profile.piProvider).toBeDefined()
   })
 })

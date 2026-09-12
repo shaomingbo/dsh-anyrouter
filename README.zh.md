@@ -5,7 +5,7 @@
 ## 安装（固定 release tag，免参数）
 
 ```bash
-npx --yes github:shaomingbo/dsh-anyrouter#v0.3.2
+npx --yes github:shaomingbo/dsh-anyrouter#v0.3.3
 ```
 
 安装器默认目标为 `web` profile，固定到精确 release tag，只修改 profile `package.json` 中的 `dependencies.dsh-anyrouter` 与 `dsh.profile.bundles`，随后在该目录执行 `pnpm install --ignore-scripts`，全程不停、不重启 DSH。结束后请手动重启 DSH 并强刷 Web 页面。
@@ -13,16 +13,17 @@ npx --yes github:shaomingbo/dsh-anyrouter#v0.3.2
 其他命令：
 
 ```bash
-npx --yes github:shaomingbo/dsh-anyrouter#v0.3.2 status                    # 是否已安装
-npx --yes github:shaomingbo/dsh-anyrouter#v0.3.2 uninstall                 # 幂等卸载
-npx --yes github:shaomingbo/dsh-anyrouter#v0.3.2 --profile headless        # 指定其他 profile
-DSH_ANYROUTER_SOURCE=link:/path/to/checkout npx --yes github:shaomingbo/dsh-anyrouter#v0.3.2   # 本地源码覆盖
+npx --yes github:shaomingbo/dsh-anyrouter#v0.3.3 status                    # 是否已安装
+npx --yes github:shaomingbo/dsh-anyrouter#v0.3.3 uninstall                 # 幂等卸载
+npx --yes github:shaomingbo/dsh-anyrouter#v0.3.3 --profile headless        # 指定其他 profile
+DSH_ANYROUTER_SOURCE=link:/path/to/checkout npx --yes github:shaomingbo/dsh-anyrouter#v0.3.3   # 本地源码覆盖
 ```
 
 ## 兼容性
 
 | DSH 版本 | 状态 |
 |---|---|
+| `0.1.5-rc.1` CLI + Web/LLM `0.1.5-rc.1` | **已验证**（启动 + 模型目录 + 设置分区）。`v0.3.3` 补齐 profile 的 `modelErrors` 映射：`@deepseek-ai/dsh-llm-pi-ai@0.1.5-rc.1` 在每次请求与模型目录投影前都会读取它；`v0.3.2` 在该宿主上会让整个 `anyrouter` 分组失败，报 `Cannot read properties of undefined (reading 'get')`。 |
 | `0.1.2-alpha.3` CLI + Web/Settings `0.1.2-rc.1` | **已验证**（启动 + 设置分区）。`v0.3.2` 探测 settings API，不再静态导入已移除的 `deepEqualJson` / `installSettingsSection` / `settingsNamespace`。 |
 | 同质 `0.1.2-alpha.3`（settings `0.1.1-rc.2`） | **已验证**（旧 helper 仍可用） |
 | `0.1.1-rc.2` 及更早 | **不支持**：这些版本的 Client 通过 `connection.api` 暴露凭证与模型发现，`0.1.2-alpha.3` 已移除该入口并改用 `ctx.remote.credentials` / `ctx.remote.llm`。请改用 `v0.2.3` |
@@ -82,7 +83,7 @@ node scripts/generate-model-profiles.mjs   # pi-ai 升级后重新生成并提�
 本地开发接入运行中的 profile：
 
 ```bash
-DSH_ANYROUTER_SOURCE=link:/absolute/path/to/checkout npx --yes github:shaomingbo/dsh-anyrouter#v0.3.2
+DSH_ANYROUTER_SOURCE=link:/absolute/path/to/checkout npx --yes github:shaomingbo/dsh-anyrouter#v0.3.3
 ```
 
 真实端点验证按环境变量门控，仅当导出 `ANYROUTER_LIVE_KEY` 时发起真实请求：

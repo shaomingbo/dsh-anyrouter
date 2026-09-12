@@ -30,6 +30,12 @@ const fiber = await ctx.plugin(plugin, {
 await settle()
 assert.equal(ctx.llm.providerRetryPolicy('anyrouter').maxRetries, 2)
 
+// The browser model catalog lists every route and resolves each model through
+// these two calls; a profile missing an adapter-owned field fails the whole
+// provider group there ("Cannot read properties of undefined (reading 'get')").
+assert.deepEqual((await ctx.llm.listModels('anyrouter')).map(model => model.id), ['claude-opus-5'])
+assert.equal((await ctx.llm.resolveModelInfo('anyrouter', 'claude-opus-5')).id, 'claude-opus-5')
+
 // Attach settings after the plugin, then exercise the actual provider API.
 const settings = await ctx.plugin(MemorySettings)
 await settle()
@@ -48,5 +54,5 @@ await fiber.dispose()
 await assert.rejects(ctx.llm.listModels('anyrouter'), /not registered|no adapter/i)
 console.log(JSON.stringify({
   status: 'passed', settings: require('@deepseek-ai/dsh-settings/package.json').version,
-  checks: ['entry import', 'late settings attachment', 'live retry policy update', 'equivalent update', 'settings detach fallback', 'plugin disposal'],
+  checks: ['entry import', 'model catalog listing and resolution', 'late settings attachment', 'live retry policy update', 'equivalent update', 'settings detach fallback', 'plugin disposal'],
 }))
